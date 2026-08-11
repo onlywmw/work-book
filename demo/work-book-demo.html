@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>work-book</title>
+<style>
+/* 本地字体（不走 CDN，离线可用） */
+@font-face{
+  font-family:'ZCOOL XiaoWei';
+  src:url('zcool-xiaowei.woff2') format('woff2');
+  font-display:swap;
+}
+@font-face{
+  font-family:'JetBrains Mono';
+  src:url('jbm-regular.woff2') format('woff2');
+  font-weight:400; font-display:swap;
+}
+@font-face{
+  font-family:'JetBrains Mono';
+  src:url('jbm-bold.woff2') format('woff2');
+  font-weight:700; font-display:swap;
+}
+@font-face{
+  font-family:'Noto Serif SC';
+  src:url('notoserifsc-bold.woff2') format('woff2');
+  font-display:swap;
+}
+:root{
+  --bg:#FAFBF7; --panel:#FFFFFF;
+  --ink:#191C19; --ink2:#5F665C; --ink3:#9AA093;
+  --line:#E5E8DF; --line-soft:#EFF1EA;
+  --blue:#05A5FA; --lemon:#D3FFAF; --lemon-soft:#F2FAE6;
+  --red:#D64545;
+  --disp:'ZCOOL XiaoWei','Microsoft YaHei',serif;
+  --serif:'Noto Serif SC','SimSun',serif;
+  --sans:'Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif;
+  --mono:'JetBrains Mono','Microsoft YaHei',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-weight:300;
+  font-feature-settings:'palt'; font-variant-numeric:tabular-nums;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+::selection{background:var(--lemon)}
+button{font-family:inherit}
+
+/* ---------- 顶栏 ---------- */
+#topbar{flex:0 0 auto; display:flex; align-items:baseline; padding:20px 32px 14px}
+.brandwrap{position:relative; display:flex; align-items:center; gap:12px}
+#projbtn{
+  width:22px; height:22px; border:1px solid var(--line); border-radius:5px;
+  background:none; cursor:pointer; position:relative; flex:0 0 auto;
+  transition:border-color .15s ease;
+}
+#projbtn:hover{border-color:var(--blue)}
+#projbtn::before{
+  content:''; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-30%);
+  border-left:4px solid transparent; border-right:4px solid transparent;
+  border-top:5px solid var(--ink2);
+  transition:transform .18s ease;
+}
+#projbtn.open::before{transform:translate(-50%,-70%) rotate(180deg)}
+.brand{font-family:var(--disp); font-size:24px; letter-spacing:1px}
+#projmenu{
+  position:absolute; top:calc(100% + 12px); left:0; z-index:50;
+  background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  box-shadow:0 10px 28px rgba(25,28,25,.08); padding:6px; min-width:264px;
+  display:none;
+}
+#projmenu.open{display:block}
+.pm-row{
+  display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+  padding:8px 10px; border-radius:6px; cursor:pointer; font-size:13px;
+  transition:background .12s ease;
+}
+.pm-row:hover{background:var(--bg)}
+.pm-row.cur{background:var(--lemon-soft)}
+.pm-tag{font-size:11px; color:var(--ink3); white-space:nowrap}
+
+/* ---------- 主体 ---------- */
+#body{flex:1 1 auto; display:flex; min-height:0}
+
+/* 左侧：功能列表 */
+#sidebar{flex:0 0 248px; border-right:1px solid var(--line); padding:10px 0 14px; overflow-y:auto}
+.feat{padding:12px 24px 12px 21px; border-left:3px solid transparent; cursor:pointer; transition:background .15s}
+.feat:hover{background:var(--panel)}
+.feat.cur{background:var(--panel); border-left-color:var(--lemon)}
+.feat-name{font-size:14px; font-weight:400}
+.feat-md{font-family:var(--mono); font-size:10px; color:var(--ink2); margin-top:5px; line-height:1.5; word-break:break-all; cursor:pointer; border-bottom:1px solid transparent; display:inline-block}
+.feat-md:hover{color:var(--blue); border-bottom-color:var(--blue)}
+.feat-md.none{color:var(--ink3); cursor:default; font-family:var(--sans)}
+.feat-md.none:hover{color:var(--ink3); border-bottom-color:transparent}
+
+/* 主区 */
+#main{flex:1; min-width:0; display:flex; flex-direction:column; overflow-y:auto; padding:14px 32px 24px}
+
+/* ---------- 环节链（拖拽排序） ---------- */
+#chain{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch}
+.cstage{
+  width:172px; background:var(--panel); border-radius:8px;
+  padding:12px 12px 10px; cursor:grab; position:relative;
+  border:1px solid transparent;
+  transition:border-color .15s, background .15s, opacity .15s;
+}
+.cstage:hover{border-color:var(--line)}
+.cstage.sel{border-color:var(--blue)}
+.cstage.act{background:var(--lemon-soft)}
+.cstage.dragging{opacity:.35; cursor:grabbing}
+.cs-top{display:flex; justify-content:space-between; align-items:baseline}
+.cs-num{font-family:var(--serif); font-weight:200; font-size:20px; color:var(--ink3)}
+.cs-state{display:flex; align-items:center; gap:5px; font-size:10px; color:var(--ink3); letter-spacing:1px}
+.cstage.sel .cs-state{color:var(--ink2)}
+.dot{width:6px; height:6px; border-radius:50%; flex:0 0 auto}
+.dot-done{background:var(--ink)}
+.dot-act{background:var(--blue)}
+.dot-wait{background:transparent; border:1px solid var(--ink3)}
+.cs-name{font-family:var(--disp); font-size:15px; margin-top:6px; letter-spacing:1px; line-height:1.4}
+.cs-md{font-family:var(--mono); font-size:10px; color:var(--ink3); margin-top:7px; line-height:1.5; word-break:break-all}
+.cs-md.pending{border-bottom:1px dashed var(--line); display:inline; padding-bottom:1px}
+
+/* 移除区（拖拽时才出现） */
+#chaindrop{
+  margin-top:10px; border:1px dashed var(--line); border-radius:8px;
+  padding:11px; text-align:center; font-size:11px; color:var(--ink3);
+  letter-spacing:2px; display:none; transition:all .15s;
+}
+#chaindrop.live{display:block}
+#chaindrop.hot{border-color:var(--red); color:var(--red); background:#FDF3F3}
+
+/* 加环节（虚线块） */
+.cadd{
+  width:110px; border:1px dashed var(--line); border-radius:8px;
+  background:none; color:var(--ink3); font-size:12px; letter-spacing:2px;
+  cursor:pointer; transition:color .15s, border-color .15s;
+}
+.cadd:hover{color:var(--blue); border-color:var(--blue)}
+
+/* ---------- 环节池（卡片式） ---------- */
+#pool{margin-top:14px; display:none}
+#pool.open{display:block}
+.pool-title{font-size:11px; color:var(--ink3); letter-spacing:3px; margin-bottom:12px}
+.pool-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:10px}
+.pcard{
+  background:var(--panel); border-radius:10px; padding:14px 14px 12px;
+  cursor:pointer; border:1px solid transparent; position:relative;
+  transition:border-color .15s, transform .18s, box-shadow .18s;
+}
+.pcard:hover{border-color:var(--line); transform:translateY(-2px); box-shadow:0 5px 14px rgba(25,28,25,.06)}
+.pcard.used{opacity:.45; cursor:default}
+.pcard.used:hover{transform:none; box-shadow:none; border-color:transparent}
+.pc-name{font-family:var(--disp); font-size:16px; letter-spacing:1px}
+.pc-desc{font-size:11px; color:var(--ink2); margin-top:6px; line-height:1.7}
+.pc-md{font-family:var(--mono); font-size:10px; color:var(--ink3); margin-top:8px; word-break:break-all}
+.pc-mark{font-size:10px; margin-top:8px; color:var(--blue); letter-spacing:2px}
+.pcard.used .pc-mark{color:var(--ink3)}
+
+/* ---------- 详情区 ---------- */
+#detail{margin-top:16px; background:var(--panel); border-radius:12px; padding:24px 28px 20px}
+.d-head{display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid var(--line-soft); padding-bottom:14px; gap:16px; flex-wrap:wrap}
+.d-title{font-family:var(--disp); font-size:21px; letter-spacing:1px}
+.d-title span{font-family:var(--serif); font-weight:200; font-size:17px; color:var(--ink3); margin-right:10px}
+.d-kind{font-size:11px; color:var(--ink3); letter-spacing:2px; margin-top:4px}
+.d-right{display:flex; align-items:baseline; gap:16px}
+.d-status{font-size:13px; letter-spacing:1px}
+.mdlink{
+  font-family:var(--mono); font-size:12px; color:var(--ink2);
+  background:none; border:none; border-bottom:1px solid var(--line);
+  cursor:pointer; padding-bottom:1px; transition:color .15s, border-color .15s;
+}
+.mdlink:hover{color:var(--blue); border-bottom-color:var(--blue)}
+.mdlink.pending{color:var(--ink3); border-bottom-style:dashed}
+.d-body{margin-top:14px}
+.src-note{font-size:11px; color:var(--ink3); margin-top:12px; letter-spacing:1px}
+
+/* 空链状态 */
+.empty-chain{padding:32px 0 8px}
+.ec-line{font-size:14px; color:var(--ink2); line-height:2.2}
+.ec-btn{
+  margin-top:14px; background:none; border:1px solid var(--line); border-radius:8px;
+  font-size:13px; letter-spacing:2px; color:var(--ink2); padding:8px 22px; cursor:pointer;
+  transition:all .15s;
+}
+.ec-btn:hover{border-color:var(--blue); color:var(--blue)}
+
+/* ---------- 通用工件形态 ---------- */
+.quote{font-family:var(--serif); font-weight:400; font-size:15px; line-height:2}
+.quote .who{font-family:var(--sans); font-weight:300; font-size:12px; color:var(--ink3); margin-left:12px}
+table.facts{width:100%; border-collapse:collapse; margin-top:14px}
+table.facts td{padding:7px 0; border-bottom:1px solid var(--line-soft); font-size:13px}
+table.facts td:last-child{font-family:var(--mono); font-size:12px; color:var(--ink2); text-align:right; white-space:nowrap}
+table.facts tr:first-child td{border-top:1px solid var(--line-soft); color:var(--ink3); font-size:11px; letter-spacing:2px}
+.root{margin-top:14px; font-size:14px}
+.root b{font-weight:500}
+
+.cmp-cand{font-size:13px; color:var(--ink2); margin-bottom:14px}
+.cmp{display:grid; grid-template-columns:1fr 1fr; gap:40px}
+.cmp-col .lab{font-size:11px; color:var(--ink3); letter-spacing:3px; margin-bottom:8px}
+.cmp-col li{list-style:none; font-size:13px; padding:6px 0; border-bottom:1px solid var(--line-soft)}
+.cmp-col li span{color:var(--ink3); font-size:12px; margin-left:6px}
+.cmp-stand{margin-top:16px; font-size:14px}
+.cmp-stand b{font-weight:500}
+
+table.plan{width:100%; border-collapse:collapse}
+table.plan td{padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13px; vertical-align:top}
+table.plan tr:first-child td{border-top:1px solid var(--line-soft); color:var(--ink3); font-size:11px; letter-spacing:2px}
+table.plan td.m{font-family:var(--mono); font-size:12px; white-space:nowrap; padding-right:24px; color:var(--ink2)}
+table.plan td.exit{padding-right:24px}
+.disc{margin-top:14px; font-size:12px; color:var(--ink3); letter-spacing:1px}
+
+.map-row{display:grid; grid-template-columns:190px 24px 1fr; gap:0 12px; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13px; align-items:baseline}
+.map-row.head{border-top:1px solid var(--line-soft); color:var(--ink3); font-size:11px; letter-spacing:2px}
+.map-row .arrow{color:var(--ink3); text-align:center}
+.map-row .foreign{font-family:var(--mono); font-size:12px; color:var(--ink2)}
+
+.log-row{display:flex; gap:18px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:13px; align-items:baseline}
+.log-row:first-child{border-top:1px solid var(--line-soft)}
+.log-hash{font-family:var(--mono); font-size:12px; color:var(--blue); flex:0 0 80px}
+.log-text{flex:1}
+.log-state{font-size:11px; color:var(--ink3); white-space:nowrap}
+
+.rule{font-size:13px; color:var(--ink2); margin-bottom:12px}
+.rule b{font-weight:500; color:var(--ink)}
+.q-row{
+  display:flex; gap:16px; align-items:baseline; padding:10px 8px 10px 10px;
+  border-bottom:1px solid var(--line-soft); border-left:2px solid transparent;
+  cursor:pointer; transition:background .15s, border-color .15s;
+}
+.q-row:hover{background:#F3F5EE}
+.q-row.decided{border-left-color:var(--blue); opacity:.6}
+.q-id{font-family:var(--mono); font-size:12px; color:var(--ink3); flex:0 0 26px}
+.q-text{flex:1; font-size:13px}
+.q-rec{font-size:11px; color:var(--ink3); white-space:nowrap}
+.q-mark{font-size:11px; color:var(--blue); flex:0 0 44px; text-align:right; visibility:hidden}
+.q-row.decided .q-mark{visibility:visible}
+.q-foot{font-size:11px; color:var(--ink3); padding:10px 8px 0; letter-spacing:1px}
+.q-foot button{background:none; border:none; font-size:11px; color:var(--ink3); cursor:pointer; text-decoration:underline; text-underline-offset:3px; margin-left:12px}
+.q-foot button:hover{color:var(--blue)}
+
+.vstate{font-size:14px; line-height:2.1}
+.vstate b{font-weight:500}
+.empty-note{font-size:13px; color:var(--ink2)}
+.cands{margin-top:10px; font-size:13px; color:var(--ink3)}
+.blank-stage{font-size:13px; color:var(--ink2); line-height:2}
+
+/* toast */
+#toast{position:fixed; left:50%; bottom:48px; transform:translateX(-50%); background:var(--ink); color:#F4F6F0; font-size:12px; letter-spacing:1px; padding:9px 20px; border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:99; max-width:70%}
+#toast.show{opacity:1}
+#toast.err{background:var(--red)}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brandwrap">
+    <button id="projbtn" title="切换项目"></button>
+    <div class="brand">work-book</div>
+    <div id="projmenu"></div>
+  </div>
+</header>
+
+<div id="body">
+  <aside id="sidebar"><div id="featlist"></div></aside>
+  <main id="main">
+    <div id="chain"></div>
+    <div id="chaindrop">拖到这里 · 从链上移除该环节</div>
+    <div id="pool"></div>
+    <section id="detail"></section>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ================= 环节类型库（每种有自己的产出物形态） ================= */
+
+const STAGE_TYPES = {
+  decompose:{name:'目标拆解', kind:'产出物 = 需求文档 · 把模糊的痛拆成可数的事实'},
+  compare:{name:'对比', kind:'产出物 = 对标研究 · 取什么不取什么'},
+  plan:{name:'得出计划和验收标准', kind:'产出物 = 施工计划 · 每期一个出口，出口就是验收标准'},
+  absorb:{name:'吸收', kind:'产出物 = 设计决策 · 外来机制 → 本地实现'},
+  implement:{name:'实施', kind:'产出物 = 施工日志 · commits + 测试'},
+  verify:{name:'查验', kind:'产出物 = 拍板结论 / 验收证据 · 放行或打回'},
+  inspire:{name:'灵感', kind:'产出物 = 下一环的目标种子 · 不预编'}
+};
+
+const POOL_DESC = {
+  decompose:'把模糊的痛拆成可数的事实',
+  compare:'候选参照对照，取什么不取什么',
+  plan:'每期一个出口，出口即验收标准',
+  absorb:'外来机制翻译成本地实现',
+  implement:'施工日志 · commits · 测试',
+  verify:'拍板或验收 · 放行或打回',
+  inspire:'真实摩擦变成下一环种子'
+};
+
+/* ================= 功能数据（全部来自真实仓库查证） ================= */
+
+const FEATURES = [
+  {
+    id:'workbook', name:'work-book 主线', dir:'features/workbook/', proj:'work-book', masterMd:'PLAN.md', masterLabel:'建设计划',
+    chain:[
+      {type:'decompose', status:'done', md:'REQUIREMENTS.md', real:true,
+        html:'<p class="quote">「我发现好多任务都中断了，不问都不知道，我现在想做一个适合我的工作台。」<span class="who">原话 · 2026-08-11</span></p>' +
+          '<table class="facts"><tr><td>拆成的事实</td><td>数据</td></tr>' +
+          '<tr><td>板上滞留标记（暂停 / 待验 / 挂账 / 待认领）</td><td>40 处</td></tr>' +
+          '<tr><td>工单 2.10 / 2.11 待真机复验</td><td>各挂 8 天</td></tr>' +
+          '<tr><td>工单 2.6 必迁三项</td><td>挂 9 天</td></tr>' +
+          '<tr><td>OCR R-SWA 派单在板</td><td>无人认领</td></tr>' +
+          '<tr><td>验收挂账（散在已验收工单里）</td><td>11 项</td></tr></table>' +
+          '<p class="root"><b>根因</b> —— 任务板是只写的。登记即沉底，没有机制主动浮出「卡了几天、卡在谁身上、下一步是什么」。</p>' +
+          '<div class="src-note">摘自 REQUIREMENTS.md §一（数据自 MOV-APP TASKBOARD.md 实测解析）</div>',},
+      {type:'compare', status:'done', md:'REFERENCE.md', real:true,
+        html:'<div class="cmp-cand">候选参照：Paperclip —— server + UI 的多用户编排平台（本地解包读源码）</div>' +
+          '<div class="cmp"><div class="cmp-col"><div class="lab">取 · 六个机制</div><ul>' +
+          '<li>attention feed<span>注意力流，按严重度排序</span></li>' +
+          '<li>dedupKey<span>同一事项只呈现一次</span></li>' +
+          '<li>snooze<span>搁置不删除，到期浮回</span></li>' +
+          '<li>decision shelf<span>决策有保质期，到期必裁决</span></li>' +
+          '<li>状态词统一<span>一词一义</span></li>' +
+          '<li>每屏三问<span>发生什么 / 需要我吗 / 怎么办</span></li></ul></div>' +
+          '<div class="cmp-col"><div class="lab">不取</div><ul>' +
+          '<li>整套系统<span>server + UI 多用户平台</span></li>' +
+          '<li>技术栈<span>TypeScript 服务端全家桶</span></li>' +
+          '<li>复杂度<span>work-book 是单机只读驾驶舱</span></li></ul></div></div>' +
+          '<p class="cmp-stand"><b>立场一句话：只摘机制，不搬系统。</b></p>',},
+      {type:'plan', status:'done', md:'PLAN.md', real:true,
+        html:'<table class="plan"><tr><td>里程碑</td><td>出口（验收标准）</td></tr>' +
+          '<tr><td class="m">M1 只读驾驶舱</td><td class="exit">四区视图渲染真数据；点行打开工单；五态覆盖；启动 &lt; 2s</td></tr>' +
+          '<tr><td class="m">M2 常驻 + 通知</td><td class="exit">关窗也在托盘；账龄跨阈值弹 Windows 通知；同事项不重弹</td></tr>' +
+          '<tr><td class="m">M3 打磨扩展</td><td class="exit">按需，不承诺工期</td></tr></table>' +
+          '<div class="disc">验收纪律：不信自报信实物 · 每里程碑独立验收 · UI 五态必覆盖 · 数据层先于 UI</div>',},
+      {type:'absorb', status:'done', md:'REFERENCE.md · 翻译章', real:true,
+        html:'<div class="map-row head"><span class="foreign">外来机制</span><span class="arrow"></span><span>work-book 实现</span></div>' +
+          '<div class="map-row"><span class="foreign">attention feed</span><span class="arrow">→</span><span>四区视图 = 分区版注意力流；滞留区按账龄 × 严重度二级排序</span></div>' +
+          '<div class="map-row"><span class="foreign">dedupKey</span><span class="arrow">→</span><span>通知 key = 任务:事项类型:触发日期，事项级去重（FR-4）</span></div>' +
+          '<div class="map-row"><span class="foreign">snooze</span><span class="arrow">→</span><span>v2：搁置 N 天到期自动浮回（v1 不做）</span></div>' +
+          '<div class="map-row"><span class="foreign">decision shelf</span><span class="arrow">→</span><span>挂账超 30 天标红「该清账了」</span></div>' +
+          '<div class="map-row"><span class="foreign">状态词统一</span><span class="arrow">→</span><span>归一为五词：施工中 / 待验收 / 等我出手 / 搁置 / 待认领</span></div>',},
+      {type:'verify', status:'act', questions:true, md:'REQUIREMENTS.md §八', real:true,
+        html:'<p class="rule"><b>纪律：需求未拍板不写代码。</b>所以 M1 一行代码未动——这是守纪律，不是停滞。</p>',},
+      {type:'inspire', status:'wait', md:'CHANGELOG.md', real:false,
+        html:'',}
+    ]
+  },
+  {
+    id:'gig', name:'外卖系统（职业体系 gig）', dir:'features/gig/', proj:'MOV-APP', masterMd:'MOV-APP/docs/PLAN_GIG_PLATFORM_2026-08-10.md', masterLabel:'建设计划',
+    chain:[
+      {type:'decompose', status:'done', md:'MOV-APP/docs/DESIGN_GIG.md', real:true,
+        html:'<p class="quote">「引入职业体系——外卖员接餐饮单、快递员收快递、出租车、理发师、美甲师、家教……很多职业自己就是老板。商家不也是一种职业么。」<span class="who">用户原话 · 2026-08-01 拍板 v3 统一</span></p>' +
+          '<table class="facts"><tr><td>拆成的结构</td><td>交易形态</td></tr>' +
+          '<tr><td>卖货型 · 餐饮/便利店/生鲜</td><td>即时单</td></tr>' +
+          '<tr><td>运力型 · 外卖员/快递员/出租车/跑腿</td><td>即时单</td></tr>' +
+          '<tr><td>手艺型·到店 · 理发师/美甲师/按摩</td><td>预约单</td></tr>' +
+          '<tr><td>手艺型·上门 · 家教/维修/保洁</td><td>预约单</td></tr></table>' +
+          '<p class="root"><b>统一公式</b> —— 职业人 = 身份 + 工种 + 服务形态 + 收款码 + 行为档案。每个人可同时是多种职业（白天理发师，晚上跑外卖）。</p>' +
+          '<div class="src-note">摘自 DESIGN_GIG.md（用户拍板 v3）</div>',},
+      {type:'compare', status:'done', md:'MOV-APP/docs/DESIGN_GIG.md §〇 §一', real:true,
+        html:'<div class="cmp-cand">候选参照：商流 MARKETPLACE（A2A 商家体系）——职业体系是它的附属，还是反过来？</div>' +
+          '<div class="cmp"><div class="cmp-col"><div class="lab">取</div><ul>' +
+          '<li>职业体系是底座<span>商流只是之上的交易层</span></li>' +
+          '<li>注册表只有一个<span>商流是读取它的一个视图</span></li>' +
+          '<li>收款码直达<span>无资金池，沿用红线</span></li></ul></div>' +
+          '<div class="cmp-col"><div class="lab">不取</div><ul>' +
+          '<li>商家当附属<span>商家 = 工种为「卖货」的职业人</span></li>' +
+          '<li>单角色档案<span>职业档案是多工种的</span></li></ul></div></div>' +
+          '<p class="cmp-stand"><b>结构洞察（用户点破）</b>：商家和手艺人是同构的——都是「本人即老板，手艺/货就是商品」。</p>',},
+      {type:'plan', status:'done', md:'MOV-APP/docs/PLAN_GIG_PLATFORM_2026-08-10.md', real:true,
+        html:'<table class="plan"><tr><td>阶段</td><td>出口（验收标准）</td></tr>' +
+          '<tr><td class="m">G0 relay</td><td class="exit">中继三件套在途</td></tr>' +
+          '<tr><td class="m">G1a 角色开通</td><td class="exit">真机亲验全过</td></tr>' +
+          '<tr><td class="m">G1b 即时单</td><td class="exit">OPEN→CLAIMED→DONE + claim 防双抢 + gig.request 对话发单</td></tr>' +
+          '<tr><td class="m">G2–G5</td><td class="exit">排队，大神评审已过</td></tr></table>' +
+          '<div class="disc">入口定稿：buyer 无设置页入口。评审意见全部落位 §六</div>',},
+      {type:'implement', status:'act', md:'MOV-APP/docs/TASKBOARD.md · 施工日志', real:true,
+        html:'<div class="log-row"><span class="log-hash">c745e85d</span><span class="log-text">G1a 角色开通</span><span class="log-state">已合并</span></div>' +
+          '<div class="log-row"><span class="log-hash">9c5335b2</span><span class="log-text">G1a 打回复修</span><span class="log-state">已合并</span></div>' +
+          '<div class="log-row"><span class="log-hash">—</span><span class="log-text">G1b 即时单骨架（已放行，待施工）</span><span class="log-state">施工中</span></div>' +
+          '<div class="log-row"><span class="log-hash">—</span><span class="log-text">G0 relay 三件（feat/gig-g0 在途）</span><span class="log-state">在途</span></div>',},
+      {type:'verify', status:'act', md:'MOV-APP/docs/ACCEPTANCE_LOG.md', real:true,
+        html:'<p class="vstate"><b>G1a 角色开通</b> —— 真机亲验全过（含打回复修一轮）。</p>' +
+          '<p class="vstate"><b>G1b 即时单</b> —— 已放行，待施工与真机验收。</p>' +
+          '<p class="vstate"><b>G0 relay</b> —— 在途，无下文风险在板上盯着。</p>',},
+      {type:'inspire', status:'wait', md:'06-灵感.md', real:false,
+        html:'<p class="empty-note">等 G1b 真机验收产出真实摩擦。</p>' +
+          '<p class="cands">候选池：多工种叠加配置 · 形态/半径 · 聚合状态显示</p>',}
+    ]
+  },
+  {
+    id:'market', name:'MCP 市场', dir:'features/mcp-market/', proj:'MOV-APP', masterMd:'MOV-APP/docs/DESIGN_MCP_MARKET.md', masterLabel:'规则文档',
+    chain:[
+      {type:'decompose', status:'done', md:'MOV-APP/docs/DESIGN_MCP_MARKET.md', real:true,
+        html:'<p class="quote">MOV 内置的工具商店：内置/内创工具免费，外部开源生态做成「质检接入包」收费。<span class="who">DESIGN_MCP_MARKET · 2026-08-08 设计定稿</span></p>' +
+          '<p class="root"><b>为什么收费立得住</b> —— 卖的不是开源代码本身，而是「质检 + 配置 + 开箱即用」的接入服务（出厂三件套：工具本体 + 查验报告 + 能力说明书）。</p>',},
+      {type:'compare', status:'done', md:'MOV-APP/docs/DESIGN_MCP_MARKET.md §0', real:true,
+        html:'<div class="cmp-cand">冲突点：红线「payment 永久不碰」（用户 2026-08-08 拍板）vs 市场要收钱</div>' +
+          '<div class="cmp"><div class="cmp-col"><div class="lab">外卖 / A2A 体系</div><ul>' +
+          '<li>维持原红线<span>不碰钱，收款码直达，无资金池</span></li></ul></div>' +
+          '<div class="cmp-col"><div class="lab">MCP 市场（本功能）</div><ul>' +
+          '<li>自家生意<span>Native 下单 + 查单两个 API</span></li>' +
+          '<li>钱直达自家商户号<span>无资金池、不代收、不分账</span></li></ul></div></div>' +
+          '<p class="cmp-stand"><b>口径订正</b>：原红线出自外卖语境；redlines.json 实施时同步。</p>',},
+      {type:'plan', status:'done', md:'MOV-APP/docs/TASKS_P1_MCP_MARKET_M1_2026-08-09.md', real:true,
+        html:'<table class="plan"><tr><td>工单</td><td>出口（验收标准）</td></tr>' +
+          '<tr><td class="m">工单25/26 市场本体</td><td class="exit">买家微信支付 → 卖家自动查单 → A2A 自动发货加密包 → 本地解密一键安装</td></tr>' +
+          '<tr><td class="m">E15 App 唤起</td><td class="exit">等电子版权认证下证 → 开放平台移动应用审核</td></tr></table>' +
+          '<div class="disc">不新增服务器——复用 mow.kim relay（TLS）</div>',},
+      {type:'implement', status:'done', md:'MOV-APP/docs/TASKBOARD.md · 变更日志', real:true,
+        html:'<div class="log-row"><span class="log-hash">已合并</span><span class="log-text">市场引擎 MarketEngine + 货架 Shelf + 订单存储 OrderStore</span><span class="log-state">工单25/26</span></div>' +
+          '<div class="log-row"><span class="log-hash">已合并</span><span class="log-text">打包器 MovmcpPackager + 安装器 MovmcpInstaller</span><span class="log-state">工单25/26</span></div>' +
+          '<div class="log-row"><span class="log-hash">f03d258c</span><span class="log-text">E15 App 唤起派单</span><span class="log-state">等下证</span></div>',},
+      {type:'verify', status:'act', md:'MOV-APP/docs/ACCEPTANCE_LOG.md', real:true,
+        html:'<p class="vstate"><b>工单25/26</b> —— 已合并 main。</p>' +
+          '<p class="vstate"><b>挂账未清</b> —— 0.01 真单证据链。</p>' +
+          '<p class="vstate"><b>E15</b> —— 等电子版权认证下证（流水号 2026A11L0003507）。</p>',}
+    ]
+  },
+  {
+    id:'wxpay', name:'微信支付（特约商户进件）', dir:'features/wxpay-applyment/', proj:'MOV-APP', masterMd:'MOV-APP/docs/DESIGN_WXPAY_APPLYMENT.md', masterLabel:'规则文档',
+    chain:[
+      {type:'decompose', status:'done', md:'MOV-APP/docs/DESIGN_WXPAY_APPLYMENT.md', real:true,
+        html:'<p class="quote">MOV 用户是微信支付普通服务商，本功能让 MOV 帮商家收集进件资料并提交入驻。<span class="who">DESIGN_WXPAY_APPLYMENT v1 · 2026-08-09</span></p>' +
+          '<table class="facts"><tr><td>拆成的事实</td><td>边界</td></tr>' +
+          '<tr><td>资料收集</td><td>六大块 + 图片选择/拍照</td></tr>' +
+          '<tr><td>后端代理接口</td><td>提交 / 状态查询 / media 上传 三端点</td></tr>' +
+          '<tr><td>私钥位置</td><td>不出服务端，MOV 端零接触</td></tr></table>' +
+          '<div class="src-note">依据：微信支付合作伙伴文档《提交申请单_特约商户进件》（2025.03.26 更新）</div>',},
+      {type:'plan', status:'done', md:'MOV-APP/docs/DESIGN_WXPAY_APPLYMENT.md §架构', real:true,
+        html:'<table class="plan"><tr><td>里程碑</td><td>出口（验收标准）</td></tr>' +
+          '<tr><td class="m">M1 进件代理</td><td class="exit">MOV 端收集 + partner-server 提交；MOV 端零接触私钥</td></tr>' +
+          '<tr><td class="m">端到端</td><td class="exit">真机填单 → 提交 → 微信侧状态可查</td></tr></table>' +
+          '<div class="disc">架构：mov-applyment.js 分步表单 → PartnerClient（cbId 异步 + 错误信封）→ partner-server（FastAPI，mow.kim，持私钥）</div>',},
+      {type:'implement', status:'done', md:'feat/wxpay-applyment · 分支日志', real:true,
+        html:'<div class="log-row"><span class="log-hash">已交付</span><span class="log-text">mov-applyment.js 分步表单（六大块资料）</span><span class="log-state">前端</span></div>' +
+          '<div class="log-row"><span class="log-hash">已交付</span><span class="log-text">PartnerClient.java + PartnerToolProvider（wxpay.applyment.* 三工具）</span><span class="log-state">MOV 端</span></div>' +
+          '<div class="log-row"><span class="log-hash">已部署</span><span class="log-text">partner-server 三端点（mow.kim，与 relay 同机）</span><span class="log-state">pytest 40 绿</span></div>',},
+      {type:'verify', status:'act', md:'MOV-APP/docs/ACCEPTANCE_LOG.md · 工单27', real:true,
+        html:'<p class="vstate"><b>M1</b> —— 已验（工单27）。</p>' +
+          '<p class="vstate"><b>待办</b> —— 真机端到端填单（等用户）。</p>' +
+          '<p class="vstate"><b>关联</b> —— 产品池实测：Native✅ / JSAPI✅ / App支付❌未开通 / H5❌。</p>',}
+    ]
+  },
+  {
+    id:'wxlogin', name:'微信登录', dir:'features/wxlogin/', proj:'MOV-APP', masterMd:'', masterLabel:'',
+    chain:[]
+  }
+];
+
+const QUESTIONS = [
+  {id:'Q1', t:'追踪范围：v1 只 MOV-APP，还是上来就多仓库', rec:'建议 只 MOV-APP 起步'},
+  {id:'Q2', t:'通知阈值：账龄几天弹通知（界面标红 3 天）', rec:'建议 5 天 · 每事项只弹一次'},
+  {id:'Q3', t:'「等我操作」判定：关键词规则够不够', rec:'建议 v1 关键词 · 零维护'},
+  {id:'Q4', t:'开机自启 v1 做不做', rec:'建议 做 · 托盘常驻的前提'},
+  {id:'Q5', t:'mov-cockpit 原型如何处置', rec:'建议 吸收解析层 · 正式代码重写'},
+  {id:'Q6', t:'产品名：就叫 work-book', rec:'建议 仓库 work-book · 窗口「工作台」'}
+];
+
+/* ================= 状态 ================= */
+let keySeq = 0;
+FEATURES.forEach(f => f.chain.forEach(s => s.key = 'k' + (++keySeq)));
+
+let curFeat = 'workbook';
+let selKey = FEATURES[0].chain[0].key;
+let curProj = 'work-book';
+
+const PROJECTS = [
+  {id:'work-book', name:'work-book', tag:'工作台本体'},
+  {id:'MOV-APP', name:'MOV-APP', tag:'多模型协作工作台'},
+  {id:'Yuanzi', name:'Yuanzi', tag:'原子生态'},
+  {id:'Dify', name:'Dify', tag:'自部署 1.15.0'}
+];
+let decided = new Set();
+let poolOpen = false;
+let dragKey = null;
+let removedByDrop = false;
+
+/* ================= 工具 ================= */
+const $ = id => document.getElementById(id);
+function toast(msg, isErr){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=> t.className = '', 2600);
+}
+function projFeats(){ return FEATURES.filter(f => f.proj === curProj); }
+function feat(){ return projFeats().find(f => f.id === curFeat) || projFeats()[0]; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function stageBy(key){ return feat().chain.find(s => s.key === key); }
+
+
+/* md 真身：真实文档给真名；新环节按后端契约生成路径 */
+function mdOf(s, idx){
+  if(s.md) return s.md;
+  return feat().dir + pad(idx+1) + '-' + STAGE_TYPES[s.type].name + '.md';
+}
+
+/* ================= 项目切换 ================= */
+
+function renderMenu(){
+  $('projmenu').innerHTML = PROJECTS.map(p =>
+    '<div class="pm-row ' + (p.id===curProj?'cur':'') + '" data-p="' + p.id + '">' +
+      '<span>' + p.name + '</span><span class="pm-tag">' + p.tag + '</span></div>'
+  ).join('');
+  document.querySelectorAll('.pm-row').forEach(el => el.addEventListener('click', e=>{
+    e.stopPropagation();
+    selectProject(el.dataset.p);
+  }));
+}
+
+function toggleMenu(force){
+  const open = force !== undefined ? force : !$('projmenu').classList.contains('open');
+  $('projmenu').classList.toggle('open', open);
+  $('projbtn').classList.toggle('open', open);
+}
+
+function selectProject(id){
+  curProj = id;
+  toggleMenu(false);
+  const list = projFeats();
+  curFeat = list.length ? list[0].id : null;
+  selKey = list.length && list[0].chain.length ? list[0].chain[0].key : null;
+  poolOpen = false;
+  renderAll();
+}
+
+$('projbtn').addEventListener('click', e => { e.stopPropagation(); toggleMenu(); });
+document.addEventListener('click', () => toggleMenu(false));
+
+/* ================= 渲染 ================= */
+
+function renderFeats(){
+  const list = projFeats();
+  if(!list.length){
+    $('featlist').innerHTML = '<div style="padding:16px 24px;font-size:12px;color:var(--ink3);line-height:1.9">这个项目还没有功能链<br>（demo 只放了 work-book 与 MOV-APP 的真实数据）</div>';
+    return;
+  }
+  $('featlist').innerHTML = list.map(f => {
+    const mdLine = f.masterMd
+      ? '<div class="feat-md" data-md="' + f.masterMd + '">' + f.masterLabel + ' · ' + f.masterMd + '</div>'
+      : '<div class="feat-md none">无规则文档 · 未立项</div>';
+    return '<div class="feat ' + (f.id===curFeat?'cur':'') + '" data-f="' + f.id + '">' +
+      '<div class="feat-name">' + f.name + '</div>' +
+      mdLine + '</div>';
+  }).join('');
+  document.querySelectorAll('.feat').forEach(el => el.addEventListener('click', ()=>{
+    curFeat = el.dataset.f;
+    const f = feat();
+    selKey = f.chain.length ? f.chain[0].key : null;
+    poolOpen = false;
+    renderAll();
+  }));
+  document.querySelectorAll('.feat-md[data-md]').forEach(el => el.addEventListener('click', e=>{
+    e.stopPropagation();
+    toast('demo：实际应用里执行 shell.openPath(' + el.dataset.md + ')');
+  }));
+}
+
+function renderChain(){
+  const f = feat();
+  let html = f.chain.map((s,i) => {
+    const T = STAGE_TYPES[s.type];
+    const dot = s.status==='done' ? 'dot-done' : s.status==='act' ? 'dot-act' : 'dot-wait';
+    const word = s.status==='done' ? '完成' : s.status==='act' ? '进行中' : '未开始';
+    const md = mdOf(s, i);
+    const mdCls = s.real ? 'cs-md' : 'cs-md pending';
+    const mdText = s.real ? md : md + ' · 待生成';
+    return '<div class="cstage ' + (s.key===selKey?'sel':'') + ' ' + (s.status==='act'?'act':'') + '" draggable="true" data-key="' + s.key + '">' +
+      '<div class="cs-top"><span class="cs-num">' + pad(i+1) + '</span>' +
+      '<span class="cs-state"><span class="dot ' + dot + '"></span>' + word + '</span></div>' +
+      '<div class="cs-name">' + T.name + '</div>' +
+      '<div class="' + mdCls + '">' + mdText + '</div></div>';
+  }).join('');
+  html += '<button class="cadd" id="chainadd">加环节</button>';
+  $('chain').innerHTML = html;
+
+  document.querySelectorAll('.cstage').forEach(el => {
+    const key = el.dataset.key;
+    el.addEventListener('click', ()=>{ selKey = key; renderChain(); renderDetail(); });
+    el.addEventListener('dragstart', e => {
+      dragKey = key;
+      removedByDrop = false;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      $('chaindrop').classList.add('live');
+    });
+    el.addEventListener('dragend', ()=>{
+      el.classList.remove('dragging');
+      $('chaindrop').classList.remove('live','hot');
+      if(!removedByDrop){ commitOrder(); renderAll(); }
+      dragKey = null;
+    });
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      if(!dragKey || dragKey === key) return;
+      const dragEl = document.querySelector('.cstage.dragging');
+      if(!dragEl) return;
+      const rect = el.getBoundingClientRect();
+      const before = e.clientX < rect.left + rect.width / 2;
+      if(before) el.parentNode.insertBefore(dragEl, el);
+      else el.parentNode.insertBefore(dragEl, el.nextSibling);
+    });
+  });
+
+  $('chainadd').addEventListener('click', ()=>{ poolOpen = !poolOpen; renderPool(); });
+}
+
+/* 拖拽结束：按 DOM 顺序回写数据（编号自动重排） */
+function commitOrder(){
+  const f = feat();
+  const order = Array.from(document.querySelectorAll('#chain .cstage')).map(el => el.dataset.key);
+  const map = new Map(f.chain.map(s => [s.key, s]));
+  f.chain = order.map(k => map.get(k)).filter(Boolean);
+}
+
+function renderDetail(){
+  const f = feat();
+  if(!f.chain.length){
+    $('detail').innerHTML =
+      '<div class="empty-chain">' +
+      '<p class="ec-line">「' + f.name + '」还没有任何环节——仓库里查无设计文档与代码，未立项。</p>' +
+      '<p class="ec-line">要启动这条链，添加第一个环节（通常是目标拆解）。后端会为每个环节在 ' + f.dir + ' 下建对应 md。</p>' +
+      '<button class="ec-btn" id="ecbtn">添加第一个环节</button></div>';
+    $('ecbtn').addEventListener('click', ()=>{ poolOpen = true; renderPool(); });
+    return;
+  }
+  const idx = f.chain.findIndex(s => s.key === selKey);
+  const s = idx >= 0 ? f.chain[idx] : f.chain[0];
+  if(idx < 0) selKey = s.key;
+  const T = STAGE_TYPES[s.type];
+  const stWord = s.status==='done' ? '已完成' : s.status==='act' ? '进行中' : '未开始';
+  const stCls = s.status==='done' ? 'st-done' : s.status==='act' ? 'st-act' : 'st-wait';
+  const md = mdOf(s, f.chain.indexOf(s));
+  const mdBtn = s.real
+    ? '<button class="mdlink" data-real="1" data-md="' + md + '">' + md + '</button>'
+    : '<button class="mdlink pending" data-real="" data-md="' + md + '">' + md + ' · 待生成</button>';
+
+  $('detail').innerHTML =
+    '<div class="d-head">' +
+      '<div><div class="d-title"><span>' + pad(f.chain.indexOf(s)+1) + '</span>' + T.name + '</div>' +
+      '<div class="d-kind">' + T.kind + '</div></div>' +
+      '<div class="d-right">' + mdBtn + '<span class="d-status ' + stCls + '">' + stWord + '</span></div>' +
+    '</div>' +
+    '<div class="d-body">' + (s.html || blankHtml(s.type)) + (s.questions ? '<div id="qlist"></div><div class="q-foot" id="qfoot"></div>' : '') + '</div>';
+
+  document.querySelector('.mdlink').addEventListener('click', e => {
+    const el = e.currentTarget;
+    if(el.dataset.real) toast('demo：实际应用里执行 shell.openPath(' + el.dataset.md + ')');
+    else toast('md 未生成 —— 这一站开工后由后端落盘 ' + el.dataset.md + '（诚实错误态）', true);
+  });
+
+  if(s.questions) renderQuestions();
+}
+
+
+function blankHtml(type){
+  return '<p class="blank-stage">这个环节是新加的，还没有产出物。<br>' +
+    STAGE_TYPES[type].kind + '。<br>内容等这一站真正开工后落进对应 md——demo 不预编。</p>';
+}
+
+/* 环节池：卡片式 */
+function renderPool(){
+  const pool = $('pool');
+  if(!poolOpen){ pool.className = ''; pool.innerHTML = ''; return; }
+  const f = feat();
+  const used = new Set(f.chain.map(s => s.type));
+  const nextNo = pad(f.chain.length + 1);
+  pool.className = 'open';
+  pool.innerHTML = '<div class="pool-title">环节池 · 点卡片加到链尾 · 每张卡 = 一个未来的 md 文件</div>' +
+    '<div class="pool-grid">' +
+    Object.keys(STAGE_TYPES).map(t => {
+      const isUsed = used.has(t);
+      return '<div class="pcard ' + (isUsed?'used':'') + '" data-t="' + t + '">' +
+        '<div class="pc-name">' + STAGE_TYPES[t].name + '</div>' +
+        '<div class="pc-desc">' + POOL_DESC[t] + '</div>' +
+        '<div class="pc-md">' + f.dir + nextNo + '-' + STAGE_TYPES[t].name + '.md</div>' +
+        '<div class="pc-mark">' + (isUsed ? '已在链上' : '点击添加') + '</div></div>';
+    }).join('') + '</div>';
+  document.querySelectorAll('.pcard').forEach(el => el.addEventListener('click', ()=>{
+    const t = el.dataset.t;
+    if(used.has(t)){ toast('「' + STAGE_TYPES[t].name + '」已在这条链上', true); return; }
+    f.chain.push({type:t, status:'wait', html:'', key:'k' + (++keySeq)});
+    selKey = f.chain[f.chain.length-1].key;
+    toast('已添加「' + STAGE_TYPES[t].name + '」—— 拖拽卡片可排序');
+    renderAll();
+  }));
+}
+
+function renderQuestions(){
+  const all = decided.size === 6;
+  $('qlist').innerHTML = QUESTIONS.map(q =>
+    '<div class="q-row ' + (decided.has(q.id)?'decided':'') + '" data-q="' + q.id + '">' +
+    '<span class="q-id">' + q.id + '</span><span class="q-text">' + q.t + '</span>' +
+    '<span class="q-rec">' + q.rec + '</span><span class="q-mark">已拍板</span></div>').join('');
+  $('qfoot').innerHTML = (all
+    ? '六问已决——查验放行，M1.1 数据层可施工。'
+    : '点击条目记录拍板（demo 仅在内存）；六问全决即放行施工。') +
+    '<button id="resetdemo">重置演示</button>';
+  document.querySelectorAll('.q-row').forEach(el => el.addEventListener('click', ()=>{
+    const q = el.dataset.q;
+    if(decided.has(q)) decided.delete(q); else decided.add(q);
+    renderFeats(); renderDetail();
+    if(decided.size === 6) toast('查验放行——M1.1 数据层可施工');
+  }));
+  $('resetdemo').addEventListener('click', e=>{
+    e.stopPropagation();
+    decided.clear();
+    renderFeats(); renderDetail();
+    toast('已重置拍板状态');
+  });
+}
+
+/* 移除区：拖拽时出现，拖入即删 */
+const drop = $('chaindrop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('hot'); });
+drop.addEventListener('dragleave', ()=> drop.classList.remove('hot'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  if(!dragKey) return;
+  const f = feat();
+  const i = f.chain.findIndex(s => s.key === dragKey);
+  if(i >= 0){
+    const name = STAGE_TYPES[f.chain[i].type].name;
+    f.chain.splice(i, 1);
+    removedByDrop = true;
+    selKey = f.chain.length ? f.chain[Math.min(i, f.chain.length-1)].key : null;
+    toast('已移除环节「' + name + '」—— 对应 md 不再落盘');
+  }
+  renderAll();
+});
+
+function renderEmptyMain(){
+  $('chain').innerHTML = '';
+  $('detail').innerHTML =
+    '<div class="empty-chain">' +
+    '<p class="ec-line">「' + curProj + '」还没有功能链。</p>' +
+    '<p class="ec-line">每个功能一条环节链，环节真身是 md 文件——后续后端按 features/&lt;功能&gt;/ 落盘。</p></div>';
+  $('pool').className = ''; $('pool').innerHTML = '';
+}
+
+function renderAll(){
+  renderMenu(); renderFeats();
+  if(!feat()){ renderEmptyMain(); return; }
+  renderChain(); renderPool(); renderDetail();
+}
+
+renderAll();
+</script>
+</body>
+</html>

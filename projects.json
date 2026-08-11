@@ -1,0 +1,8 @@
+{
+  "projects": [
+    { "id": "work-book", "name": "work-book", "tag": "工作台本体", "repo": "." },
+    { "id": "MOV-APP", "name": "MOV-APP", "tag": "多模型协作工作台", "repo": "../MOV-APP" },
+    { "id": "Yuanzi", "name": "Yuanzi", "tag": "原子生态", "repo": null },
+    { "id": "Dify", "name": "Dify", "tag": "自部署 1.15.0", "repo": null }
+  ]
+}

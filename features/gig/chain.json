@@ -1,0 +1,15 @@
+{
+  "id": "gig",
+  "name": "外卖系统（职业体系 gig）",
+  "proj": "MOV-APP",
+  "masterMd": "../MOV-APP/docs/PLAN_GIG_PLATFORM_2026-08-10.md",
+  "masterLabel": "建设计划",
+  "stages": [
+    { "id": "gig-d", "type": "decompose", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/DESIGN_GIG.md" },
+    { "id": "gig-c", "type": "compare", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/DESIGN_GIG.md", "refSection": "§〇 §一" },
+    { "id": "gig-p", "type": "plan", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/PLAN_GIG_PLATFORM_2026-08-10.md" },
+    { "id": "gig-m", "type": "implement", "status": "act", "created": "2026-08-11", "ref": "../MOV-APP/docs/TASKBOARD.md", "refSection": "· 施工日志" },
+    { "id": "gig-v", "type": "verify", "status": "act", "created": "2026-08-11", "ref": "../MOV-APP/docs/ACCEPTANCE_LOG.md" },
+    { "id": "gig-i", "type": "inspire", "status": "wait", "created": "2026-08-11" }
+  ]
+}

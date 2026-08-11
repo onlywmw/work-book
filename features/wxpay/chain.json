@@ -1,0 +1,13 @@
+{
+  "id": "wxpay",
+  "name": "微信支付（特约商户进件）",
+  "proj": "MOV-APP",
+  "masterMd": "../MOV-APP/docs/DESIGN_WXPAY_APPLYMENT.md",
+  "masterLabel": "规则文档",
+  "stages": [
+    { "id": "wp-d", "type": "decompose", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/DESIGN_WXPAY_APPLYMENT.md" },
+    { "id": "wp-p", "type": "plan", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/DESIGN_WXPAY_APPLYMENT.md", "refSection": "§架构" },
+    { "id": "wp-m", "type": "implement", "status": "done", "created": "2026-08-11" },
+    { "id": "wp-v", "type": "verify", "status": "act", "created": "2026-08-11", "ref": "../MOV-APP/docs/ACCEPTANCE_LOG.md", "refSection": "· 工单27" }
+  ]
+}

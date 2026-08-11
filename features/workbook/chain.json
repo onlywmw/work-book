@@ -1,0 +1,15 @@
+{
+  "id": "workbook",
+  "name": "work-book 主线",
+  "proj": "work-book",
+  "masterMd": "PLAN.md",
+  "masterLabel": "建设计划",
+  "stages": [
+    { "id": "wb-d", "type": "decompose", "status": "done", "created": "2026-08-11", "ref": "REQUIREMENTS.md" },
+    { "id": "wb-c", "type": "compare", "status": "done", "created": "2026-08-11", "ref": "REFERENCE.md" },
+    { "id": "wb-p", "type": "plan", "status": "done", "created": "2026-08-11", "ref": "PLAN.md" },
+    { "id": "wb-a", "type": "absorb", "status": "done", "created": "2026-08-11", "ref": "REFERENCE.md", "refSection": "· 翻译章" },
+    { "id": "wb-v", "type": "verify", "status": "act", "created": "2026-08-11", "ref": "REQUIREMENTS.md", "refSection": "§八" },
+    { "id": "wb-i", "type": "inspire", "status": "wait", "created": "2026-08-11", "ref": "CHANGELOG.md" }
+  ]
+}

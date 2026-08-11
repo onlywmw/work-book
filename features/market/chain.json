@@ -1,0 +1,14 @@
+{
+  "id": "market",
+  "name": "MCP 市场",
+  "proj": "MOV-APP",
+  "masterMd": "../MOV-APP/docs/DESIGN_MCP_MARKET.md",
+  "masterLabel": "规则文档",
+  "stages": [
+    { "id": "mk-d", "type": "decompose", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/DESIGN_MCP_MARKET.md" },
+    { "id": "mk-c", "type": "compare", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/DESIGN_MCP_MARKET.md", "refSection": "§0" },
+    { "id": "mk-p", "type": "plan", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/TASKS_P1_MCP_MARKET_M1_2026-08-09.md" },
+    { "id": "mk-m", "type": "implement", "status": "done", "created": "2026-08-11", "ref": "../MOV-APP/docs/TASKBOARD.md", "refSection": "· 变更日志" },
+    { "id": "mk-v", "type": "verify", "status": "act", "created": "2026-08-11", "ref": "../MOV-APP/docs/ACCEPTANCE_LOG.md" }
+  ]
+}
