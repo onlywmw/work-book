@@ -1,0 +1,9 @@
+{
+  "name": "work-book",
+  "version": "0.1.0",
+  "private": true,
+  "description": "work-book 工作台——md 即真身的数据层（CLI：node wb.js）",
+  "scripts": {
+    "start": "node wb.js"
+  }
+}
