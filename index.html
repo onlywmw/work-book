@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>work-book</title>
+<style>
+
+/* 本地字体（不走 CDN，离线可用） */
+@font-face{
+  font-family:'ZCOOL XiaoWei';
+  src:url('demo/zcool-xiaowei.woff2') format('woff2');
+  font-display:swap;
+}
+@font-face{
+  font-family:'JetBrains Mono';
+  src:url('demo/jbm-regular.woff2') format('woff2');
+  font-weight:400; font-display:swap;
+}
+@font-face{
+  font-family:'JetBrains Mono';
+  src:url('demo/jbm-bold.woff2') format('woff2');
+  font-weight:700; font-display:swap;
+}
+@font-face{
+  font-family:'Noto Serif SC';
+  src:url('demo/notoserifsc-bold.woff2') format('woff2');
+  font-display:swap;
+}
+:root{
+  --bg:#FAFBF7; --panel:#FFFFFF;
+  --ink:#191C19; --ink2:#5F665C; --ink3:#9AA093;
+  --line:#E5E8DF; --line-soft:#EFF1EA;
+  --blue:#05A5FA; --lemon:#D3FFAF; --lemon-soft:#F2FAE6;
+  --red:#D64545;
+  --disp:'ZCOOL XiaoWei','Microsoft YaHei',serif;
+  --serif:'Noto Serif SC','SimSun',serif;
+  --sans:'Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif;
+  --mono:'JetBrains Mono','Microsoft YaHei',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-weight:300;
+  font-feature-settings:'palt'; font-variant-numeric:tabular-nums;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+::selection{background:var(--lemon)}
+button{font-family:inherit}
+
+/* ---------- 顶栏 ---------- */
+#topbar{flex:0 0 auto; display:flex; align-items:baseline; padding:20px 32px 14px}
+.brandwrap{position:relative; display:flex; align-items:center; gap:12px}
+#projbtn{
+  width:22px; height:22px; border:1px solid var(--line); border-radius:5px;
+  background:none; cursor:pointer; position:relative; flex:0 0 auto;
+  transition:border-color .15s ease;
+}
+#projbtn:hover{border-color:var(--blue)}
+#projbtn::before{
+  content:''; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-30%);
+  border-left:4px solid transparent; border-right:4px solid transparent;
+  border-top:5px solid var(--ink2);
+  transition:transform .18s ease;
+}
+#projbtn.open::before{transform:translate(-50%,-70%) rotate(180deg)}
+.brand{font-family:var(--disp); font-size:24px; letter-spacing:1px}
+#projmenu{
+  position:absolute; top:calc(100% + 12px); left:0; z-index:50;
+  background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  box-shadow:0 10px 28px rgba(25,28,25,.08); padding:6px; min-width:264px;
+  display:none;
+}
+#projmenu.open{display:block}
+.pm-row{
+  display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+  padding:8px 10px; border-radius:6px; cursor:pointer; font-size:13px;
+  transition:background .12s ease;
+}
+.pm-row:hover{background:var(--bg)}
+.pm-row.cur{background:var(--lemon-soft)}
+.pm-tag{font-size:11px; color:var(--ink3); white-space:nowrap}
+
+/* ---------- 主体 ---------- */
+#body{flex:1 1 auto; display:flex; min-height:0}
+
+/* 左侧：功能列表 */
+#sidebar{flex:0 0 248px; border-right:1px solid var(--line); padding:10px 0 14px; overflow-y:auto}
+.feat{padding:12px 24px 12px 21px; border-left:3px solid transparent; cursor:pointer; transition:background .15s}
+.feat:hover{background:var(--panel)}
+.feat.cur{background:var(--panel); border-left-color:var(--lemon)}
+.feat-name{font-size:14px; font-weight:400}
+.feat-md{font-family:var(--mono); font-size:10px; color:var(--ink2); margin-top:5px; line-height:1.5; word-break:break-all; cursor:pointer; border-bottom:1px solid transparent; display:inline-block}
+.feat-md:hover{color:var(--blue); border-bottom-color:var(--blue)}
+.feat-md.none{color:var(--ink3); cursor:default; font-family:var(--sans)}
+.feat-md.none:hover{color:var(--ink3); border-bottom-color:transparent}
+
+/* 主区 */
+#main{flex:1; min-width:0; display:flex; flex-direction:column; overflow-y:auto; padding:14px 32px 24px}
+
+/* ---------- 环节链（拖拽排序） ---------- */
+#chain{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch}
+.cstage{
+  width:172px; background:var(--panel); border-radius:8px;
+  padding:12px 12px 10px; cursor:grab; position:relative;
+  border:1px solid transparent;
+  transition:border-color .15s, background .15s, opacity .15s;
+}
+.cstage:hover{border-color:var(--line)}
+.cstage.sel{border-color:var(--blue)}
+.cstage.act{background:var(--lemon-soft)}
+.cstage.dragging{opacity:.35; cursor:grabbing}
+.cs-top{display:flex; justify-content:space-between; align-items:baseline}
+.cs-num{font-family:var(--serif); font-weight:200; font-size:20px; color:var(--ink3)}
+.cs-state{display:flex; align-items:center; gap:5px; font-size:10px; color:var(--ink3); letter-spacing:1px}
+.cstage.sel .cs-state{color:var(--ink2)}
+.dot{width:6px; height:6px; border-radius:50%; flex:0 0 auto}
+.dot-done{background:var(--ink)}
+.dot-act{background:var(--blue)}
+.dot-wait{background:transparent; border:1px solid var(--ink3)}
+.cs-name{font-family:var(--disp); font-size:15px; margin-top:6px; letter-spacing:1px; line-height:1.4}
+.cs-md{font-family:var(--mono); font-size:10px; color:var(--ink3); margin-top:7px; line-height:1.5; word-break:break-all}
+.cs-md.pending{border-bottom:1px dashed var(--line); display:inline; padding-bottom:1px}
+
+/* 移除区（拖拽时才出现） */
+#chaindrop{
+  margin-top:10px; border:1px dashed var(--line); border-radius:8px;
+  padding:11px; text-align:center; font-size:11px; color:var(--ink3);
+  letter-spacing:2px; display:none; transition:all .15s;
+}
+#chaindrop.live{display:block}
+#chaindrop.hot{border-color:var(--red); color:var(--red); background:#FDF3F3}
+
+/* 加环节（虚线块） */
+.cadd{
+  width:110px; border:1px dashed var(--line); border-radius:8px;
+  background:none; color:var(--ink3); font-size:12px; letter-spacing:2px;
+  cursor:pointer; transition:color .15s, border-color .15s;
+}
+.cadd:hover{color:var(--blue); border-color:var(--blue)}
+
+/* ---------- 环节池（卡片式） ---------- */
+#pool{margin-top:14px; display:none}
+#pool.open{display:block}
+.pool-title{font-size:11px; color:var(--ink3); letter-spacing:3px; margin-bottom:12px}
+.pool-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:10px}
+.pcard{
+  background:var(--panel); border-radius:10px; padding:14px 14px 12px;
+  cursor:pointer; border:1px solid transparent; position:relative;
+  transition:border-color .15s, transform .18s, box-shadow .18s;
+}
+.pcard:hover{border-color:var(--line); transform:translateY(-2px); box-shadow:0 5px 14px rgba(25,28,25,.06)}
+.pcard.used{opacity:.45; cursor:default}
+.pcard.used:hover{transform:none; box-shadow:none; border-color:transparent}
+.pc-name{font-family:var(--disp); font-size:16px; letter-spacing:1px}
+.pc-desc{font-size:11px; color:var(--ink2); margin-top:6px; line-height:1.7}
+.pc-md{font-family:var(--mono); font-size:10px; color:var(--ink3); margin-top:8px; word-break:break-all}
+.pc-mark{font-size:10px; margin-top:8px; color:var(--blue); letter-spacing:2px}
+.pcard.used .pc-mark{color:var(--ink3)}
+
+/* ---------- 详情区 ---------- */
+#detail{margin-top:16px; background:var(--panel); border-radius:12px; padding:24px 28px 20px}
+.d-head{display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid var(--line-soft); padding-bottom:14px; gap:16px; flex-wrap:wrap}
+.d-title{font-family:var(--disp); font-size:21px; letter-spacing:1px}
+.d-title span{font-family:var(--serif); font-weight:200; font-size:17px; color:var(--ink3); margin-right:10px}
+.d-kind{font-size:11px; color:var(--ink3); letter-spacing:2px; margin-top:4px}
+.d-right{display:flex; align-items:baseline; gap:16px}
+.d-status{font-size:13px; letter-spacing:1px}
+.mdlink{
+  font-family:var(--mono); font-size:12px; color:var(--ink2);
+  background:none; border:none; border-bottom:1px solid var(--line);
+  cursor:pointer; padding-bottom:1px; transition:color .15s, border-color .15s;
+}
+.mdlink:hover{color:var(--blue); border-bottom-color:var(--blue)}
+.mdlink.pending{color:var(--ink3); border-bottom-style:dashed}
+.d-body{margin-top:14px}
+.src-note{font-size:11px; color:var(--ink3); margin-top:12px; letter-spacing:1px}
+
+/* 空链状态 */
+.empty-chain{padding:32px 0 8px}
+.ec-line{font-size:14px; color:var(--ink2); line-height:2.2}
+.ec-btn{
+  margin-top:14px; background:none; border:1px solid var(--line); border-radius:8px;
+  font-size:13px; letter-spacing:2px; color:var(--ink2); padding:8px 22px; cursor:pointer;
+  transition:all .15s;
+}
+.ec-btn:hover{border-color:var(--blue); color:var(--blue)}
+
+/* ---------- 通用工件形态 ---------- */
+.quote{font-family:var(--serif); font-weight:400; font-size:15px; line-height:2}
+.quote .who{font-family:var(--sans); font-weight:300; font-size:12px; color:var(--ink3); margin-left:12px}
+table.facts{width:100%; border-collapse:collapse; margin-top:14px}
+table.facts td{padding:7px 0; border-bottom:1px solid var(--line-soft); font-size:13px}
+table.facts td:last-child{font-family:var(--mono); font-size:12px; color:var(--ink2); text-align:right; white-space:nowrap}
+table.facts tr:first-child td{border-top:1px solid var(--line-soft); color:var(--ink3); font-size:11px; letter-spacing:2px}
+.root{margin-top:14px; font-size:14px}
+.root b{font-weight:500}
+
+.cmp-cand{font-size:13px; color:var(--ink2); margin-bottom:14px}
+.cmp{display:grid; grid-template-columns:1fr 1fr; gap:40px}
+.cmp-col .lab{font-size:11px; color:var(--ink3); letter-spacing:3px; margin-bottom:8px}
+.cmp-col li{list-style:none; font-size:13px; padding:6px 0; border-bottom:1px solid var(--line-soft)}
+.cmp-col li span{color:var(--ink3); font-size:12px; margin-left:6px}
+.cmp-stand{margin-top:16px; font-size:14px}
+.cmp-stand b{font-weight:500}
+
+table.plan{width:100%; border-collapse:collapse}
+table.plan td{padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13px; vertical-align:top}
+table.plan tr:first-child td{border-top:1px solid var(--line-soft); color:var(--ink3); font-size:11px; letter-spacing:2px}
+table.plan td.m{font-family:var(--mono); font-size:12px; white-space:nowrap; padding-right:24px; color:var(--ink2)}
+table.plan td.exit{padding-right:24px}
+.disc{margin-top:14px; font-size:12px; color:var(--ink3); letter-spacing:1px}
+
+.map-row{display:grid; grid-template-columns:190px 24px 1fr; gap:0 12px; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13px; align-items:baseline}
+.map-row.head{border-top:1px solid var(--line-soft); color:var(--ink3); font-size:11px; letter-spacing:2px}
+.map-row .arrow{color:var(--ink3); text-align:center}
+.map-row .foreign{font-family:var(--mono); font-size:12px; color:var(--ink2)}
+
+.log-row{display:flex; gap:18px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:13px; align-items:baseline}
+.log-row:first-child{border-top:1px solid var(--line-soft)}
+.log-hash{font-family:var(--mono); font-size:12px; color:var(--blue); flex:0 0 80px}
+.log-text{flex:1}
+.log-state{font-size:11px; color:var(--ink3); white-space:nowrap}
+
+.rule{font-size:13px; color:var(--ink2); margin-bottom:12px}
+.rule b{font-weight:500; color:var(--ink)}
+.q-row{
+  display:flex; gap:16px; align-items:baseline; padding:10px 8px 10px 10px;
+  border-bottom:1px solid var(--line-soft); border-left:2px solid transparent;
+  cursor:pointer; transition:background .15s, border-color .15s;
+}
+.q-row:hover{background:#F3F5EE}
+.q-row.decided{border-left-color:var(--blue); opacity:.6}
+.q-id{font-family:var(--mono); font-size:12px; color:var(--ink3); flex:0 0 26px}
+.q-text{flex:1; font-size:13px}
+.q-rec{font-size:11px; color:var(--ink3); white-space:nowrap}
+.q-mark{font-size:11px; color:var(--blue); flex:0 0 44px; text-align:right; visibility:hidden}
+.q-row.decided .q-mark{visibility:visible}
+.q-foot{font-size:11px; color:var(--ink3); padding:10px 8px 0; letter-spacing:1px}
+.q-foot button{background:none; border:none; font-size:11px; color:var(--ink3); cursor:pointer; text-decoration:underline; text-underline-offset:3px; margin-left:12px}
+.q-foot button:hover{color:var(--blue)}
+
+.vstate{font-size:14px; line-height:2.1}
+.vstate b{font-weight:500}
+.empty-note{font-size:13px; color:var(--ink2)}
+.cands{margin-top:10px; font-size:13px; color:var(--ink3)}
+.blank-stage{font-size:13px; color:var(--ink2); line-height:2}
+
+/* toast */
+#toast{position:fixed; left:50%; bottom:48px; transform:translateX(-50%); background:var(--ink); color:#F4F6F0; font-size:12px; letter-spacing:1px; padding:9px 20px; border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:99; max-width:70%}
+#toast.show{opacity:1}
+#toast.err{background:var(--red)}
+
+</style>
+</head>
+<body>
+<header id="topbar">
+  <div class="brandwrap">
+    <button id="projbtn" title="切换项目"></button>
+    <div class="brand">work-book</div>
+    <div id="projmenu"></div>
+  </div>
+  <button id="refreshbtn" title="重新读取磁盘数据">刷新</button>
+</header>
+<div id="body">
+  <aside id="sidebar"><div id="featlist"></div></aside>
+  <main id="main">
+    <div id="chain"></div>
+    <div id="chaindrop">拖到这里 · 从链上移除该环节</div>
+    <div id="pool"></div>
+    <section id="detail"></section>
+  </main>
+</div>
+<div id="statusbar"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+
+/* ================= 环节类型库（与 demo 定稿一致） ================= */
+
+const STAGE_TYPES = {
+  decompose: { name: '目标拆解', kind: '产出物 = 需求文档 · 把模糊的痛拆成可数的事实' },
+  compare: { name: '对比', kind: '产出物 = 对标研究 · 取什么不取什么' },
+  plan: { name: '得出计划和验收标准', kind: '产出物 = 施工计划 · 每期一个出口，出口就是验收标准' },
+  absorb: { name: '吸收', kind: '产出物 = 设计决策 · 外来机制 → 本地实现' },
+  implement: { name: '实施', kind: '产出物 = 施工日志 · commits + 测试' },
+  verify: { name: '查验', kind: '产出物 = 拍板结论 / 验收证据 · 放行或打回' },
+  inspire: { name: '灵感', kind: '产出物 = 下一环的目标种子 · 不预编' },
+};
+
+const POOL_DESC = {
+  decompose: '把模糊的痛拆成可数的事实',
+  compare: '候选参照对照，取什么不取什么',
+  plan: '每期一个出口，出口即验收标准',
+  absorb: '外来机制翻译成本地实现',
+  implement: '施工日志 · commits · 测试',
+  verify: '拍板或验收 · 放行或打回',
+  inspire: '真实摩擦变成下一环种子',
+};
+
+/* ================= 状态 ================= */
+
+let projects = [];
+let features = [];
+let curProj = null;
+let curFeat = null;
+let selKey = null;
+let poolOpen = false;
+let dragKey = null;
+let removedByDrop = false;
+
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, '0');
+
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => (t.className = ''), 2600);
+}
+
+/* ================= 数据（全部经 preload 桥，来自真文件） ================= */
+
+async function refresh() {
+  const [p, f] = await Promise.all([window.wb.listProjects(), window.wb.listFeatures()]);
+  if (p.error) return toast(p.error, true);
+  projects = p.projects;
+  features = f.features;
+  if (!curProj || !projects.some((x) => x.id === curProj)) curProj = projects[0] ? projects[0].id : null;
+  const pf = projFeats();
+  if (!pf.some((x) => x.id === curFeat)) curFeat = pf.length ? pf[0].id : null;
+  selKey = null;
+  poolOpen = false;
+  renderMenu();
+  renderFeats();
+  renderChain();
+  renderDetail();
+  renderStatus(f.errors);
+}
+
+function projFeats() {
+  return features.filter((f) => f.proj === curProj);
+}
+
+function feat() {
+  return projFeats().find((f) => f.id === curFeat) || projFeats()[0] || null;
+}
+
+/* ================= 顶栏 ================= */
+
+function toggleMenu(force) {
+  const open = force !== undefined ? force : !$('projmenu').classList.contains('open');
+  $('projmenu').classList.toggle('open', open);
+  $('projbtn').classList.toggle('open', open);
+}
+
+function renderMenu() {
+  $('projmenu').innerHTML = projects
+    .map(
+      (p) =>
+        '<div class="pm-row ' + (p.id === curProj ? 'cur' : '') + '" data-p="' + p.id + '">' +
+        '<span>' + p.name + '</span><span class="pm-tag">' + (p.present ? p.tag : p.tag + ' · 未检出') + '</span></div>'
+    )
+    .join('');
+  document.querySelectorAll('.pm-row').forEach((el) =>
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      curProj = el.dataset.p;
+      const pf = projFeats();
+      curFeat = pf.length ? pf[0].id : null;
+      selKey = null;
+      poolOpen = false;
+      toggleMenu(false);
+      renderMenu();
+      renderFeats();
+      renderChain();
+      renderDetail();
+    })
+  );
+}
+
+/* ================= 左栏：功能列表 ================= */
+
+function renderFeats() {
+  const list = projFeats();
+  if (!list.length) {
+    $('featlist').innerHTML =
+      '<div style="padding:16px 24px;font-size:12px;color:var(--ink3);line-height:1.9">这个项目还没有功能链</div>';
+    return;
+  }
+  $('featlist').innerHTML = list
+    .map((f) => {
+      const mdLine = f.masterMd
+        ? '<div class="feat-md" data-md="' + f.masterMd + '">' + (f.masterLabel || '主文档') + ' · ' + f.masterMd + '</div>'
+        : '<div class="feat-md none">无规则文档 · 未立项</div>';
+      return (
+        '<div class="feat ' + (f.id === curFeat ? 'cur' : '') + '" data-f="' + f.id + '">' +
+        '<div class="feat-name">' + f.name + '</div>' +
+        mdLine +
+        '</div>'
+      );
+    })
+    .join('');
+  document.querySelectorAll('.feat').forEach((el) =>
+    el.addEventListener('click', () => {
+      curFeat = el.dataset.f;
+      selKey = null;
+      poolOpen = false;
+      renderFeats();
+      renderChain();
+      renderDetail();
+    })
+  );
+  document.querySelectorAll('.feat-md[data-md]').forEach((el) =>
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const r = await window.wb.open(el.dataset.md);
+      toast(r.ok ? '已打开 ' + el.dataset.md : r.error, !r.ok);
+    })
+  );
+}
+
+/* ================= 环节链（拖拽排序） ================= */
+
+function mdText(s) {
+  if (s.mdKind === 'real') return s.mdLabel;
+  return s.mdLabel + (s.mdKind === 'pending' ? ' · 待生成' : '');
+}
+
+function renderChain() {
+  const f = feat();
+  const chainEl = $('chain');
+  if (!f) {
+    chainEl.innerHTML = '<div style="padding:32px 0 8px;font-size:13px;color:var(--ink3)">（无功能）</div>';
+    $('chaindrop').style.display = 'none';
+    return;
+  }
+  $('chaindrop').style.display = '';
+  chainEl.innerHTML =
+    f.stages
+      .map((s, i) => {
+        const T = STAGE_TYPES[s.type];
+        const dot = s.status === 'done' ? 'dot-done' : s.status === 'act' ? 'dot-act' : 'dot-wait';
+        const word = s.status === 'done' ? '完成' : s.status === 'act' ? '进行中' : '未开始';
+        const mdCls = s.mdKind === 'real' ? 'cs-md' : 'cs-md pending';
+        const refLine = s.ref
+          ? '<div class="cs-ref" data-ref="' + s.ref.path + '">' + (s.ref.ok ? 'ref ' : 'ref 缺失 ') + s.ref.path + (s.ref.section ? ' ' + s.ref.section : '') + '</div>'
+          : '';
+        return (
+          '<div class="cstage ' + (s.id === selKey ? 'sel' : '') + ' ' + (s.status === 'act' ? 'act' : '') + '" draggable="true" data-key="' + s.id + '">' +
+          '<div class="cs-top"><span class="cs-num">' + pad(s.no) + '</span>' +
+          '<span class="cs-state"><span class="dot ' + dot + '"></span>' + word + '</span></div>' +
+          '<div class="cs-name">' + T.name + '</div>' +
+          '<div class="' + mdCls + '">' + mdText(s) + '</div>' +
+          refLine +
+          '</div>'
+        );
+      })
+      .join('') +
+    '<button class="cadd" id="chainadd">加环节</button>';
+  bindChainEvents();
+  $('chainadd').addEventListener('click', () => {
+    poolOpen = !poolOpen;
+    renderPool();
+  });
+  document.querySelectorAll('.cs-ref[data-ref]').forEach((el) =>
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const r = await window.wb.open(el.dataset.ref);
+      toast(r.ok ? '已打开 ' + el.dataset.ref : r.error, !r.ok);
+    })
+  );
+}
+
+/* 拖拽结束：按 DOM 顺序逐个校正落盘（chain-writer move，零文件操作） */
+async function commitOrder() {
+  const f = feat();
+  if (!f) return;
+  const order = Array.from(document.querySelectorAll('#chain .cstage')).map((el) => el.dataset.key);
+  for (let i = 0; i < order.length; i++) {
+    const cur = f.stages.map((s) => s.id);
+    const want = order[i];
+    const curIdx = cur.indexOf(want);
+    if (curIdx !== i) {
+      const r = await window.wb.moveStage(f.id, want, i + 1);
+      if (r.error) {
+        toast(r.error, true);
+        break;
+      }
+      f.stages = r.chain.stages;
+    }
+  }
+  selKey = order[0] || null;
+  renderChain();
+  renderDetail();
+}
+
+function bindChainEvents() {
+  document.querySelectorAll('#chain .cstage').forEach((el) => {
+    const key = el.dataset.key;
+    el.addEventListener('click', () => {
+      selKey = key;
+      renderChain();
+      renderDetail();
+    });
+    el.addEventListener('dragstart', (e) => {
+      dragKey = key;
+      removedByDrop = false;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      $('chaindrop').classList.add('live');
+    });
+    el.addEventListener('dragend', async () => {
+      el.classList.remove('dragging');
+      $('chaindrop').classList.remove('live', 'hot');
+      if (!removedByDrop) await commitOrder();
+      dragKey = null;
+    });
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!dragKey || dragKey === key) return;
+      const dragEl = document.querySelector('.cstage.dragging');
+      if (!dragEl) return;
+      const rect = el.getBoundingClientRect();
+      const before = e.clientX < rect.left + rect.width / 2;
+      if (before) el.parentNode.insertBefore(dragEl, el);
+      else el.parentNode.insertBefore(dragEl, el.nextSibling);
+    });
+  });
+}
+
+/* ================= 详情 ================= */
+
+function blankHtml(type) {
+  return (
+    '<p class="blank-stage">这个环节是新加的，还没有产出物。<br>' +
+    STAGE_TYPES[type].kind +
+    '。<br>内容等这一站真正开工后落进对应 md——先 touch 落盘，再用编辑器写。</p>'
+  );
+}
+
+async function renderDetail() {
+  const f = feat();
+  const det = $('detail');
+  if (!f) {
+    det.innerHTML = '';
+    return;
+  }
+  if (!f.stages.length) {
+    det.innerHTML =
+      '<div class="empty-chain">' +
+      '<p class="ec-line">「' + f.name + '」还没有任何环节——未立项。</p>' +
+      '<button class="ec-btn" id="ecbtn">添加第一个环节</button></div>';
+    $('ecbtn').addEventListener('click', () => {
+      poolOpen = true;
+      renderPool();
+    });
+    return;
+  }
+  const s = f.stages.find((x) => x.id === selKey) || f.stages[0];
+  selKey = s.id;
+  const T = STAGE_TYPES[s.type];
+  const stWord = s.status === 'done' ? '已完成' : s.status === 'act' ? '进行中' : '未开始';
+  const stCls = s.status === 'done' ? 'st-done' : s.status === 'act' ? 'st-act' : 'st-wait';
+  det.innerHTML =
+    '<div class="d-head">' +
+    '<div><div class="d-title"><span>' + pad(s.no) + '</span>' + T.name + '</div>' +
+    '<div class="d-kind">' + T.kind + '</div></div>' +
+    '<div class="d-right">' +
+    '<button class="mdlink ' + (s.mdKind !== 'real' ? 'pending' : '') + '" data-md="' + (s.mdKind === 'real' ? s.mdLabel : '') + '" data-ref="' + (s.ref ? s.ref.path : '') + '">' + mdText(s) + '</button>' +
+    '<span class="d-status ' + stCls + '">' + stWord + '</span>' +
+    '</div></div>' +
+    '<div class="d-body" id="dbody">' + blankHtml(s.type) + '</div>';
+  document.querySelector('.mdlink').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const target = btn.dataset.md || btn.dataset.ref;
+    if (!target) {
+      toast('md 未生成——开工后 touch 落盘（诚实待生成）', true);
+      return;
+    }
+    const r = await window.wb.open(target);
+    toast(r.ok ? '已打开 ' + target : r.error, !r.ok);
+  });
+  const body = $('dbody');
+  const mdr = await window.wb.readStageMd(f.id, s.id);
+  if (mdr.error) {
+    body.innerHTML = '<p class="blank-stage">' + mdr.error + '</p>';
+  } else if (mdr.kind === 'real') {
+    body.innerHTML = '';
+    const pre = document.createElement('pre');
+    pre.className = 'md-body';
+    pre.textContent = mdr.text;
+    body.appendChild(pre);
+  } else if (mdr.kind === 'missing') {
+    body.innerHTML = '<p class="blank-stage">md 文件缺失——链上登记了但文件不在，请检查磁盘。</p>';
+  }
+}
+
+/* ================= 环节池 ================= */
+
+function renderPool() {
+  const pool = $('pool');
+  if (!poolOpen) {
+    pool.className = '';
+    pool.innerHTML = '';
+    return;
+  }
+  const f = feat();
+  if (!f) return;
+  const used = new Set(f.stages.map((s) => s.type));
+  pool.className = 'open';
+  pool.innerHTML =
+    '<div class="pool-title">环节池 · 点卡片加到链尾 · 加环节只登记不落盘（落盘用 touch）</div>' +
+    '<div class="pool-grid">' +
+    Object.keys(STAGE_TYPES)
+      .map((t) => {
+        const isUsed = used.has(t);
+        return (
+          '<div class="pcard ' + (isUsed ? 'used' : '') + '" data-t="' + t + '">' +
+          '<div class="pc-name">' + STAGE_TYPES[t].name + '</div>' +
+          '<div class="pc-desc">' + POOL_DESC[t] + '</div>' +
+          '<div class="pc-md">stages/' + t + '.md · 待生成</div>' +
+          '<div class="pc-mark">' + (isUsed ? '已在链上' : '点击添加') + '</div></div>'
+        );
+      })
+      .join('') +
+    '</div>';
+  document.querySelectorAll('.pcard').forEach((el) =>
+    el.addEventListener('click', async () => {
+      const t = el.dataset.t;
+      const f2 = feat();
+      if (!f2) return;
+      const r = await window.wb.addStage(f2.id, t);
+      if (r.error) {
+        toast(r.error, true);
+        return;
+      }
+      f2.stages = r.chain.stages;
+      selKey = f2.stages[f2.stages.length - 1].id;
+      poolOpen = false;
+      toast('已添加「' + STAGE_TYPES[t].name + '」—— 拖拽卡片可排序');
+      renderPool();
+      renderChain();
+      renderDetail();
+    })
+  );
+}
+
+/* ================= 移除区（拖入即删，md 进 .trash） ================= */
+
+function bindDrop() {
+  const drop = $('chaindrop');
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.classList.add('hot');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('hot'));
+  drop.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    drop.classList.remove('hot');
+    removedByDrop = true;
+    const f = feat();
+    if (!f || !dragKey) return;
+    const r = await window.wb.rmStage(f.id, dragKey);
+    if (r.error) {
+      toast(r.error, true);
+    } else {
+      f.stages = r.chain.stages;
+      selKey = null;
+      toast('已移除环节（md 进 .trash/，不消失）');
+      renderChain();
+      renderDetail();
+    }
+  });
+}
+
+/* ================= 状态栏 ================= */
+
+function renderStatus(errors) {
+  const base = window.wb.root ? '' : '';
+  window.wb.root().then((root) => {
+    let s = '数据源: ' + root;
+    if (errors && errors.length) s += ' · 警告: ' + errors.join('; ');
+    $('statusbar').textContent = s;
+  });
+}
+
+/* ================= 启动 ================= */
+
+$('projbtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleMenu();
+});
+document.addEventListener('click', () => toggleMenu(false));
+$('refreshbtn').addEventListener('click', () => {
+  toast('刷新中…');
+  refresh();
+});
+bindDrop();
+refresh();
+
+</script>
+</body>
+</html>

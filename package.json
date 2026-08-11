@@ -1,9 +1,15 @@
 {
   "name": "work-book",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "work-book 工作台——md 即真身的数据层（CLI：node wb.js）",
+  "description": "work-book 工作台——md 即真身（CLI + Electron 壳）",
+  "main": "main.js",
   "scripts": {
-    "start": "node wb.js"
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "cli": "node wb.js"
+  },
+  "devDependencies": {
+    "electron": "^43.3.0"
   }
 }
